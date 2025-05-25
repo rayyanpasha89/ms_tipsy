@@ -1,18 +1,22 @@
-from flask import Flask, request, jsonify, render_template
-from rag_engine import load_faq_data, search_faq
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from rag_engine import get_response
 
-app = Flask(__name__)
+app = FastAPI()
 
-@app.route("/")
-def index():
-    return render_template("index.html")
+# CORS setup for frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.route("/ask", methods=["POST"])
-def ask():
-    user_input = request.json.get("message", "")
-    answer = search_faq(user_input)
-    return jsonify({"reply": answer})
-
-if __name__ == "__main__":
-    load_faq_data()
-    app.run(debug=True)
+@app.post("/chat")
+async def chat(request: Request):
+    data = await request.json()
+    prompt = data.get("prompt", "hello")
+    response = get_response(prompt)
+    return JSONResponse({"response": response})
